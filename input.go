@@ -26,39 +26,29 @@ type InputEvent struct {
 	Rune rune
 }
 
-func readInput() InputEvent {
-	var buf [16]byte
-	n, err := syscall.Read(syscall.Stdin, buf[:])
-	if err != nil || n == 0 {
-		return InputEvent{Key: KeyNone}
-	}
+var inputBuf []byte
 
-	// Single byte
-	if n == 1 {
-		switch buf[0] {
-		case 3: // Ctrl+C
-			return InputEvent{Key: KeyCtrlC}
-		case 13, 10: // Enter
-			return InputEvent{Key: KeyEnter}
-		case 32: // Space
-			return InputEvent{Key: KeySpace}
-		case 9: // Tab
-			return InputEvent{Key: KeyTab}
-		case 27: // Esc (standalone)
-			return InputEvent{Key: KeyEsc}
-		case 127, 8: // Backspace
-			return InputEvent{Key: KeyBackspace}
-		default:
-			if buf[0] >= 32 && buf[0] < 127 {
-				return InputEvent{Key: KeyRune, Rune: rune(buf[0])}
-			}
+func hasBufferedInput() bool {
+	return len(inputBuf) > 0
+}
+
+func readInput() InputEvent {
+	// If buffer is empty, do a blocking read
+	if len(inputBuf) == 0 {
+		var buf [64]byte
+		n, err := syscall.Read(syscall.Stdin, buf[:])
+		if err != nil || n == 0 {
 			return InputEvent{Key: KeyNone}
 		}
+		inputBuf = append(inputBuf[:0], buf[:n]...)
 	}
 
-	// Escape sequences
-	if n >= 3 && buf[0] == 27 && buf[1] == '[' {
-		switch buf[2] {
+	b := inputBuf
+
+	// Escape sequences (must check before single-byte ESC)
+	if b[0] == 27 && len(b) >= 3 && b[1] == '[' {
+		inputBuf = inputBuf[3:]
+		switch b[2] {
 		case 'A':
 			return InputEvent{Key: KeyUp}
 		case 'B':
@@ -68,13 +58,53 @@ func readInput() InputEvent {
 		case 'D':
 			return InputEvent{Key: KeyLeft}
 		}
+		return InputEvent{Key: KeyNone}
 	}
 
 	// Multi-byte UTF-8
-	if buf[0] >= 0x80 {
-		r := decodeUTF8(buf[:n])
-		if r != 0 {
-			return InputEvent{Key: KeyRune, Rune: r}
+	if b[0] >= 0xC0 {
+		size := 1
+		switch {
+		case b[0] < 0xE0:
+			size = 2
+		case b[0] < 0xF0:
+			size = 3
+		default:
+			size = 4
+		}
+		if len(b) >= size {
+			r := decodeUTF8(b[:size])
+			inputBuf = inputBuf[size:]
+			if r != 0 {
+				return InputEvent{Key: KeyRune, Rune: r}
+			}
+			return InputEvent{Key: KeyNone}
+		}
+		// Not enough bytes — discard lead byte
+		inputBuf = inputBuf[1:]
+		return InputEvent{Key: KeyNone}
+	}
+
+	// Single byte — consume one byte from buffer
+	ch := b[0]
+	inputBuf = inputBuf[1:]
+
+	switch ch {
+	case 3:
+		return InputEvent{Key: KeyCtrlC}
+	case 13, 10:
+		return InputEvent{Key: KeyEnter}
+	case 32:
+		return InputEvent{Key: KeySpace}
+	case 9:
+		return InputEvent{Key: KeyTab}
+	case 27:
+		return InputEvent{Key: KeyEsc}
+	case 127, 8:
+		return InputEvent{Key: KeyBackspace}
+	default:
+		if ch >= 32 && ch < 127 {
+			return InputEvent{Key: KeyRune, Rune: rune(ch)}
 		}
 	}
 

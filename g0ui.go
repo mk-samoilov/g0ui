@@ -1,6 +1,9 @@
 package g0ui
 
-import "os"
+import (
+	"os"
+	"strings"
+)
 
 // Run initializes the terminal, runs fn in a loop, and restores on exit.
 func Run(fn func()) {
@@ -42,10 +45,13 @@ func Begin(title string) {
 	ctx.widgets = ctx.widgets[:0]
 	ctx.pressed = -1
 
-	// Read input (blocking) — skip on first frame to render immediately
+	// Read input (blocking) — skip on first frame and after button press to render immediately
 	if ctx.firstFrame {
 		ctx.input = InputEvent{Key: KeyNone}
 		ctx.firstFrame = false
+	} else if ctx.needRedraw {
+		ctx.input = InputEvent{Key: KeyNone}
+		ctx.needRedraw = false
 	} else {
 		ctx.input = readInput()
 	}
@@ -101,7 +107,15 @@ func End() {
 		ctx.focusIndex = 0
 	}
 
-	renderFrame(&ctx)
+	// After button press, schedule immediate redraw next frame
+	if ctx.pressed >= 0 {
+		ctx.needRedraw = true
+	}
+
+	// Skip render if there's more buffered input
+	if !hasBufferedInput() || ctx.pressed >= 0 {
+		renderFrame(&ctx)
+	}
 }
 
 // Text adds a non-focusable text widget.
@@ -132,6 +146,20 @@ func Button(label string) bool {
 	})
 
 	return ctx.pressed == fid
+}
+
+// Break adds an empty line.
+func Break() {
+	Text("")
+}
+
+// Separation adds a horizontal line of dashes. Default length is 6.
+func Separation(el ...int) {
+	n := 6
+	if len(el) > 0 && el[0] > 0 {
+		n = el[0]
+	}
+	Text(strings.Repeat("--", n))
 }
 
 // BeginGroup starts a horizontal group of widgets.

@@ -98,7 +98,7 @@ func makeButtonBlock(label string, width int, focusID int) groupBlock {
 	// Middle: │ label │
 	mid := make([]cell, width)
 	mid[0] = cell{ch: '│'}
-	mid[1] = cell{ch: ' '}
+	mid[1] = cell{ch: ' ', focusInverse: true}
 	labelRunes := []rune(label)
 	for i := 0; i < innerW-2; i++ {
 		if i < len(labelRunes) {
