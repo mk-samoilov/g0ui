@@ -5,8 +5,6 @@ type widgetKind int
 const (
 	widgetText widgetKind = iota
 	widgetButton
-	widgetGroupStart
-	widgetGroupEnd
 )
 
 type widget struct {

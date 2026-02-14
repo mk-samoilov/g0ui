@@ -2,34 +2,36 @@ package main
 
 import (
 	"fmt"
+
 	"g0ui"
 )
 
 func main() {
 	counter := 0
+	w := g0ui.Widgets
 
 	g0ui.Run(func() {
 		g0ui.Begin("My program dashboard")
 
-		g0ui.Spacing()
+		w.Spacing()
 
-		g0ui.Text("Hello from g0ui example")
-		g0ui.Text(fmt.Sprintf("Counter: %d", counter))
+		w.Text("Hello from g0ui example")
+		w.Text(fmt.Sprintf("Counter: %d", counter))
 
-		g0ui.Spacing()
+		w.Spacing()
 
-		if g0ui.Button("Increment") {
+		if w.Button("Increment") {
 			counter++
 		}
-		if g0ui.Button("Decrement") {
+		if w.Button("Decrement") {
 			counter--
 		}
 
-		g0ui.Spacing()
-		g0ui.Separation()
-		g0ui.Spacing()
+		w.Spacing()
+		w.Separation()
+		w.Spacing()
 
-		if g0ui.Button("Quit") {
+		if w.Button("Quit") {
 			g0ui.Quit()
 		}
 

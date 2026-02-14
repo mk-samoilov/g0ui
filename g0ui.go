@@ -1,9 +1,12 @@
 package g0ui
 
-import (
-	"os"
-	"strings"
-)
+import "os"
+
+// W is the widget accessor type. Use Widgets to call widget methods.
+type W struct{}
+
+// Widgets is the global widget accessor.
+var Widgets W
 
 // Run initializes the terminal, runs fn in a loop, and restores on exit.
 func Run(fn func()) {
@@ -116,67 +119,4 @@ func End() {
 	if !hasBufferedInput() || ctx.pressed >= 0 {
 		renderFrame(&ctx)
 	}
-}
-
-// Text adds a non-focusable text widget.
-func Text(s string) {
-	ctx.widgets = append(ctx.widgets, widget{
-		kind:      widgetText,
-		label:     s,
-		focusable: false,
-		focusID:   -1,
-	})
-}
-
-// Button adds a focusable button widget. Returns true if pressed this frame.
-func Button(label string) bool {
-	// Assign focusID
-	fid := 0
-	for _, w := range ctx.widgets {
-		if w.focusable {
-			fid++
-		}
-	}
-
-	ctx.widgets = append(ctx.widgets, widget{
-		kind:      widgetButton,
-		label:     label,
-		focusable: true,
-		focusID:   fid,
-	})
-
-	return ctx.pressed == fid
-}
-
-// Spacing adds an empty line.
-func Spacing() {
-	Text("")
-}
-
-// Separation adds a horizontal line of dashes. Default length is 6.
-func Separation(el ...int) {
-	n := 14
-	if len(el) > 0 && el[0] > 0 {
-		n = el[0]
-	}
-
-	Text(strings.Repeat("-", n))
-}
-
-// BeginGroup starts a horizontal group of widgets.
-func BeginGroup() {
-	ctx.widgets = append(ctx.widgets, widget{
-		kind:      widgetGroupStart,
-		focusable: false,
-		focusID:   -1,
-	})
-}
-
-// EndGroup ends a horizontal group of widgets.
-func EndGroup() {
-	ctx.widgets = append(ctx.widgets, widget{
-		kind:      widgetGroupEnd,
-		focusable: false,
-		focusID:   -1,
-	})
 }
