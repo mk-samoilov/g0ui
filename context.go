@@ -14,7 +14,6 @@ type frameContext struct {
 	running       bool
 	input         InputEvent
 	firstFrame    bool
-	needRedraw    bool       // force immediate re-render next frame (after button press)
 }
 
 var ctx frameContext

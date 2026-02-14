@@ -48,13 +48,10 @@ func Begin(title string) {
 	ctx.widgets = ctx.widgets[:0]
 	ctx.pressed = -1
 
-	// Read input (blocking) — skip on first frame and after button press to render immediately
+	// Read input (with timeout) — skip on first frame to render immediately
 	if ctx.firstFrame {
 		ctx.input = InputEvent{Key: KeyNone}
 		ctx.firstFrame = false
-	} else if ctx.needRedraw {
-		ctx.input = InputEvent{Key: KeyNone}
-		ctx.needRedraw = false
 	} else {
 		ctx.input = readInput()
 	}
@@ -110,13 +107,8 @@ func End() {
 		ctx.focusIndex = 0
 	}
 
-	// After button press, schedule immediate redraw next frame
-	if ctx.pressed >= 0 {
-		ctx.needRedraw = true
-	}
-
 	// Skip render if there's more buffered input
-	if !hasBufferedInput() || ctx.pressed >= 0 {
+	if !hasBufferedInput() {
 		renderFrame(&ctx)
 	}
 }

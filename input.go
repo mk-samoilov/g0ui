@@ -1,6 +1,9 @@
 package g0ui
 
-import "syscall"
+import (
+	"syscall"
+	"unsafe"
+)
 
 // Key represents a keyboard input.
 type Key int
@@ -32,9 +35,33 @@ func hasBufferedInput() bool {
 	return len(inputBuf) > 0
 }
 
+// stdinReady returns true if stdin has data available within timeoutMs.
+func stdinReady(timeoutMs int) bool {
+	ts := syscall.Timespec{
+		Sec:  int64(timeoutMs / 1000),
+		Nsec: int64((timeoutMs % 1000) * 1000000),
+	}
+	var readfds [128]byte // fd_set for pselect (1024 bits)
+	readfds[0] = 1        // set bit 0 (stdin)
+	_, _, errno := syscall.Syscall6(
+		syscall.SYS_PSELECT6,
+		1, // nfds
+		uintptr(unsafe.Pointer(&readfds[0])),
+		0, 0,
+		uintptr(unsafe.Pointer(&ts)),
+		0,
+	)
+	return errno == 0 && readfds[0]&1 != 0
+}
+
+const frameTimeMs = 50 // 20 FPS
+
 func readInput() InputEvent {
-	// If buffer is empty, do a blocking read
+	// If buffer is empty, wait up to frameTimeMs for input
 	if len(inputBuf) == 0 {
+		if !stdinReady(frameTimeMs) {
+			return InputEvent{Key: KeyNone}
+		}
 		var buf [64]byte
 		n, err := syscall.Read(syscall.Stdin, buf[:])
 		if err != nil || n == 0 {
