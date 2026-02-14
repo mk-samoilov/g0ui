@@ -148,18 +148,19 @@ func Button(label string) bool {
 	return ctx.pressed == fid
 }
 
-// Break adds an empty line.
-func Break() {
+// Spacing adds an empty line.
+func Spacing() {
 	Text("")
 }
 
 // Separation adds a horizontal line of dashes. Default length is 6.
 func Separation(el ...int) {
-	n := 6
+	n := 14
 	if len(el) > 0 && el[0] > 0 {
 		n = el[0]
 	}
-	Text(strings.Repeat("--", n))
+
+	Text(strings.Repeat("-", n))
 }
 
 // BeginGroup starts a horizontal group of widgets.
